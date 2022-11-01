@@ -14,5 +14,14 @@ export function transformClassName(code: string) {
 }
 
 export function removeQuota(str: string) {
-  return /"[\d\w]+"/.test(str) ? str.slice(1, str.length - 1) : str;
+  return /(["'])[\d\w]+\1/.test(str) ? str.slice(1, str.length - 1) : str;
+}
+export function removeTemplateLiteral(str: string) {
+  const m = /\{`([-_\d\w]+)`\}/.exec(str); //'{`foo3`}' {`foo_foo-4`}
+  // console.log(m, str);
+  if (m) {
+    return m[1];
+  } else {
+    return str;
+  }
 }

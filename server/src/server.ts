@@ -17,7 +17,7 @@ import { transformClassName } from './helper';
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
-const classCompletion: CompletionItem[] = [];
+let classCompletion: CompletionItem[] = [];
 // Create a simple text document manager.
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
@@ -51,6 +51,7 @@ connection.onDidChangeConfiguration((change) => {});
 //   findCssInDir(change.document);
 // });
 documents.onDidOpen(async (e) => {
+  classCompletion = [];
   classCompletion.push(...(await findCssInDir(e.document)));
 });
 async function findCssInDir(
