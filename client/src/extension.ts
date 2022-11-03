@@ -44,10 +44,10 @@ export function activate(context: ExtensionContext) {
       { scheme: 'file', language: 'scss' },
       { scheme: 'file', language: 'typescriptreact' },
     ],
-    synchronize: {
-      // Notify the server about file changes to '.clientrc files contained in the workspace
-      fileEvents: workspace.createFileSystemWatcher('**/.tsx'),
-    },
+    // synchronize: {
+    //   // Notify the server about file changes to '.clientrc files contained in the workspace
+    //   fileEvents: workspace.createFileSystemWatcher('**/.scss'),
+    // },
   };
 
   // Create the language client and start the client.

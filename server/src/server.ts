@@ -28,6 +28,7 @@ connection.onInitialize((params: InitializeParams) => {
       textDocumentSync: TextDocumentSyncKind.Incremental,
       // Tell the client that this server supports code completion.
       completionProvider: {
+        triggerCharacters: ['.'],
         resolveProvider: true,
       },
     },
@@ -47,13 +48,12 @@ connection.onInitialized(() => {
 
 connection.onDidChangeConfiguration((change) => {});
 
-// 当tsx保存的时候才开始重新获取
+// 当tsx保存的时候才开始重新获取（只针对当前改变的文件发生改变）
 documents.onDidSave((change) => {
   const { document } = change;
   const extname = path.extname(document.uri);
   if (extname === '.tsx') {
-    console.log('tsx change');
-    updateCompletion(document);
+    updateCompletion(document, document.uri);
   }
 });
 documents.onDidOpen(async (e) => {
@@ -65,29 +65,41 @@ documents.onDidOpen(async (e) => {
  * 遍历同层级目录下的tsx/html文件
  */
 async function findHtmlInDir(
-  textDocument: TextDocument
+  textDocument: TextDocument,
+  file?: string
 ): Promise<CompletionItem[]> {
-  let filePath = textDocument.uri.slice(7);
-  let dirPath = path.resolve(filePath, '..');
-  const files = readdirSync(dirPath).filter((file) => /tsx|html/.test(file));
   const classname: string[] = [];
-  files.forEach((fileName) => {
-    const targetFilePath = path.resolve(dirPath, fileName);
+  if (file) {
+    let filePath = file.slice(7);
     classname.push(
-      ...transformClassName(readFileSync(targetFilePath, { encoding: 'utf-8' }))
+      ...transformClassName(readFileSync(filePath, { encoding: 'utf-8' }))
     );
-  });
-  return classname.map((c) => ({
+  } else {
+    let filePath = textDocument.uri.slice(7);
+    let dirPath = path.resolve(filePath, '..');
+    const files = readdirSync(dirPath).filter((file) => /tsx|html/.test(file));
+    files.forEach((fileName) => {
+      const targetFilePath = path.resolve(dirPath, fileName);
+      classname.push(
+        ...transformClassName(
+          readFileSync(targetFilePath, { encoding: 'utf-8' })
+        )
+      );
+    });
+  }
+  // 去重
+  const set = new Set(classname);
+  return [...set].map((c) => ({
     label: `.${c}`,
     kind: CompletionItemKind.Class,
     data: c,
   }));
 }
-async function updateCompletion(document: TextDocument) {
-  classCompletion = [];
-  const newCompletion = await findHtmlInDir(document);
+
+async function updateCompletion(document: TextDocument, file?: string) {
+  const newCompletion = await findHtmlInDir(document, file);
   // console.log(newCompletion);
-  classCompletion.push(...newCompletion);
+  classCompletion = newCompletion;
 }
 
 connection.onDidChangeWatchedFiles((_change) => {
