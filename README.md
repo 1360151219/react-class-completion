@@ -25,3 +25,4 @@ search for 'psfe-react-extension' in VScode Extensions and install it.
   ```
   ![](./variable_completion.jpg)
   - [x] listening for classname changing in `.tsx` file.
+- [] **support go to defination from classname in `scss/css` to the relative `tsx` file**

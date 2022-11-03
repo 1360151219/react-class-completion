@@ -25,3 +25,23 @@ export function removeTemplateLiteral(str: string) {
     return str;
   }
 }
+export function createRange(m: RegExpMatchArray) {
+  const start = m.index || 0;
+  const end = start + m[0].length;
+  return {
+    start,
+    end,
+  };
+}
+export function getDefinationClass(text: string, character: number) {
+  const wordReg = /\.([-_\d\w]+)/g;
+  const m = text.matchAll(wordReg) || [];
+  for (const i of m) {
+    const range = createRange(i);
+    if (character >= range.start && character <= range.end) {
+      // eslint-disable-next-line prefer-destructuring
+      return i[1];
+    }
+  }
+  return '';
+}

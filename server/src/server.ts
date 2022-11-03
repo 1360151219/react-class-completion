@@ -8,19 +8,20 @@ import {
   TextDocumentPositionParams,
   CompletionItem,
   CompletionItemKind,
+  DefinitionParams,
+  Definition,
 } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import * as path from 'path';
 import { readdirSync, readFileSync } from 'fs-extra';
-import { transformClassName } from './helper';
+import { createRange, getDefinationClass, transformClassName } from './helper';
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
 let classCompletion: CompletionItem[] = [];
 // Create a simple text document manager.
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
-
 connection.onInitialize((params: InitializeParams) => {
   // params.rootPath
   const result: InitializeResult = {
@@ -31,6 +32,7 @@ connection.onInitialize((params: InitializeParams) => {
         triggerCharacters: ['.'],
         resolveProvider: true,
       },
+      definitionProvider: true,
     },
   };
   return result;
@@ -57,9 +59,8 @@ documents.onDidSave((change) => {
   }
 });
 documents.onDidOpen(async (e) => {
-  // TODO: open scss
   console.log('open', e);
-  updateCompletion(e.document);
+  if (path.extname(e.document.uri) === '.scss') updateCompletion(e.document);
 });
 /**
  * 遍历同层级目录下的tsx/html文件
@@ -124,5 +125,28 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
   return item;
 });
 
+connection.onDefinition((item: DefinitionParams): Definition => {
+  let t =
+    documents.get(item.textDocument.uri)?.getText().split('\n')[
+      item.position.line
+    ] || '';
+  const definationClass = getDefinationClass(t, item.position.character);
+  console.log(definationClass);
+
+  // TODO：对应tsx中的位置
+  return {
+    uri: '/Applications/workplace/zjx-vsc-extension/test/index.tsx',
+    range: {
+      start: {
+        character: 0,
+        line: 0,
+      },
+      end: {
+        character: 3,
+        line: 3,
+      },
+    },
+  };
+});
 documents.listen(connection);
 connection.listen();
