@@ -1,6 +1,7 @@
 import { declare } from '@babel/helper-plugin-utils';
 import { PluginObj, PluginPass } from '@babel/core';
 import { removeQuota, removeTemplateLiteral } from '../helper';
+import { IClassName } from '../types';
 
 const StringLiteralReg = /\$\{([\d\w]+)\}/g;
 export default declare((api, options, dirname) => {
@@ -21,7 +22,7 @@ export default declare((api, options, dirname) => {
         state.set('variables', variablesMap);
       },
       JSXAttribute: (path, state) => {
-        const classname = state.get('classname');
+        const classname: IClassName[] = state.get('classname');
         // console.log('start', classname.length, StringLiteralReg.lastIndex);
         if (path.get('name').toString() === 'className') {
           let value = removeQuota(path.get('value').toString());
@@ -30,13 +31,24 @@ export default declare((api, options, dirname) => {
             // 如果正则表达式是全局的，则在test或者exec方法调用的时候，它的lastIndex都会移动到匹配字符串的末尾。因此需要置0
             StringLiteralReg.lastIndex = 0;
             // 如果含有变量
+            const originName = value;
             while ((m = StringLiteralReg.exec(value))) {
               const variablesMap = state.get('variables');
               value = value.replace(StringLiteralReg, variablesMap.get(m[1]));
             }
-            classname.push(removeTemplateLiteral(value));
+            classname.push({
+              originName,
+              className: removeTemplateLiteral(value),
+              file: options.file,
+              range: path.node.value?.loc,
+            });
           } else {
-            classname.push(value);
+            classname.push({
+              originName: value,
+              className: value,
+              file: options.file,
+              range: path.node.value?.loc,
+            });
           }
         }
       },

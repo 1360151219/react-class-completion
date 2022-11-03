@@ -15,11 +15,13 @@ import { TextDocument } from 'vscode-languageserver-textdocument';
 
 import * as path from 'path';
 import { readdirSync, readFileSync } from 'fs-extra';
-import { createRange, getDefinationClass, transformClassName } from './helper';
+import { getDefinationClass, transformClassName } from './helper';
+import { IClassName } from './types';
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
 let classCompletion: CompletionItem[] = [];
+let classMetas: IClassName[] = [];
 // Create a simple text document manager.
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 connection.onInitialize((params: InitializeParams) => {
@@ -69,11 +71,11 @@ async function findHtmlInDir(
   textDocument: TextDocument,
   file?: string
 ): Promise<CompletionItem[]> {
-  const classname: string[] = [];
+  const classname: IClassName[] = [];
   if (file) {
     let filePath = file.slice(7);
     classname.push(
-      ...transformClassName(readFileSync(filePath, { encoding: 'utf-8' }))
+      ...transformClassName(readFileSync(filePath, { encoding: 'utf-8' }), file)
     );
   } else {
     let filePath = textDocument.uri.slice(7);
@@ -83,15 +85,16 @@ async function findHtmlInDir(
       const targetFilePath = path.resolve(dirPath, fileName);
       classname.push(
         ...transformClassName(
-          readFileSync(targetFilePath, { encoding: 'utf-8' })
+          readFileSync(targetFilePath, { encoding: 'utf-8' }),
+          targetFilePath
         )
       );
     });
   }
-  // 去重
-  const set = new Set(classname);
-  return [...set].map((c) => ({
-    label: `.${c}`,
+  classMetas = classname;
+  // TODO去重
+  return classname.map((c) => ({
+    label: `.${c.className}`,
     kind: CompletionItemKind.Class,
     data: c,
   }));
@@ -131,22 +134,23 @@ connection.onDefinition((item: DefinitionParams): Definition => {
       item.position.line
     ] || '';
   const definationClass = getDefinationClass(t, item.position.character);
-  console.log(definationClass);
-
-  // TODO：对应tsx中的位置
-  return {
-    uri: '/Applications/workplace/zjx-vsc-extension/test/index.tsx',
+  // console.log(definationClass);
+  const sourceDefination = classMetas.filter(
+    (c) => c.className === definationClass
+  );
+  return sourceDefination.map((defination) => ({
+    uri: defination.file,
     range: {
       start: {
-        character: 0,
-        line: 0,
+        character: defination.range!.start.column || 0,
+        line: defination.range!.start.line - 1,
       },
       end: {
-        character: 3,
-        line: 3,
+        character: defination.range!.end.column || 0,
+        line: defination.range!.end.line - 1,
       },
     },
-  };
+  }));
 });
 documents.listen(connection);
 connection.listen();

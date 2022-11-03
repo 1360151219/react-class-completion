@@ -1,15 +1,17 @@
 import { transformFromAstSync } from '@babel/core';
 import { parse } from '@babel/parser';
 import parseJsx from './plugins/parseJsx';
-export function transformClassName(code: string) {
+import { IClassName } from './types';
+export function transformClassName(code: string, file: string) {
   const ast = parse(code, {
     sourceType: 'unambiguous',
     plugins: ['typescript', 'jsx'],
   });
-  const classname: string[] = [];
+  const classname: IClassName[] = [];
   transformFromAstSync(ast, code, {
-    plugins: [[parseJsx, { classname }]],
+    plugins: [[parseJsx, { classname, file }]],
   });
+  console.log(classname);
   return classname;
 }
 
