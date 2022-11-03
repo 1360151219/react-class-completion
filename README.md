@@ -4,6 +4,7 @@ a vscode extension for react developer
 
 ## Get Started
 
+search for 'psfe-react-extension' in VScode Extensions and install it.
 
 ## features
 
