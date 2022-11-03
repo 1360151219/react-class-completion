@@ -47,17 +47,26 @@ connection.onInitialized(() => {
 
 connection.onDidChangeConfiguration((change) => {});
 
-// documents.onDidChangeContent((change) => {
-//   findCssInDir(change.document);
-// });
-documents.onDidOpen(async (e) => {
-  classCompletion = [];
-  classCompletion.push(...(await findCssInDir(e.document)));
+// 当tsx保存的时候才开始重新获取
+documents.onDidSave((change) => {
+  const { document } = change;
+  const extname = path.extname(document.uri);
+  if (extname === '.tsx') {
+    console.log('tsx change');
+    updateCompletion(document);
+  }
 });
-async function findCssInDir(
+documents.onDidOpen(async (e) => {
+  // TODO: open scss
+  console.log('open', e);
+  updateCompletion(e.document);
+});
+/**
+ * 遍历同层级目录下的tsx/html文件
+ */
+async function findHtmlInDir(
   textDocument: TextDocument
 ): Promise<CompletionItem[]> {
-  // TODO
   let filePath = textDocument.uri.slice(7);
   let dirPath = path.resolve(filePath, '..');
   const files = readdirSync(dirPath).filter((file) => /tsx|html/.test(file));
@@ -73,6 +82,12 @@ async function findCssInDir(
     kind: CompletionItemKind.Class,
     data: c,
   }));
+}
+async function updateCompletion(document: TextDocument) {
+  classCompletion = [];
+  const newCompletion = await findHtmlInDir(document);
+  // console.log(newCompletion);
+  classCompletion.push(...newCompletion);
 }
 
 connection.onDidChangeWatchedFiles((_change) => {

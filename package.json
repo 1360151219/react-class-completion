@@ -18,7 +18,8 @@
 	},
 	"activationEvents": [
 		"onLanguage:scss",
-		"onLanguage:css"
+		"onLanguage:css",
+		"onLanguage:typescriptreact"
 	],
 	"main": "./client/out/extension",
 	"contributes": {

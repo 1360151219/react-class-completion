@@ -27,6 +27,7 @@ export default declare((api, options, dirname) => {
           let value = removeQuota(path.get('value').toString());
           if (StringLiteralReg.test(value)) {
             let m: RegExpExecArray | null;
+            // 如果正则表达式是全局的，则在test或者exec方法调用的时候，它的lastIndex都会移动到匹配字符串的末尾。因此需要置0
             StringLiteralReg.lastIndex = 0;
             // 如果含有变量
             while ((m = StringLiteralReg.exec(value))) {

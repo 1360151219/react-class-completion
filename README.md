@@ -4,8 +4,8 @@ a vscode extension for react developer
 
 ## features
 
-- [x] **support class name completions for `scss/css` from `.tsx` files below the same dir path**
-  - [x] ordinary className in JSXAttribute
+- [x] **support class name completions for `scss/css` from `.tsx` files below the same dir path**.
+  - [x] ordinary className in JSXAttribute.
   - [x] variable className in JSXAttribute. example：
   ```ts
   // src/index,tsx
@@ -20,3 +20,4 @@ a vscode extension for react developer
   );
   ```
   ![](./variable_completion.jpg)
+  - [] listening for classname changing in `.tsx` file.
