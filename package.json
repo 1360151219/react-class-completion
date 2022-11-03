@@ -1,14 +1,15 @@
 {
-	"name": "react-class-completion",
+	"name": "psfe-react-extension",
 	"description": "a vscode extension for react developer",
 	"author": "zhanjingxi",
 	"license": "MIT",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/1360151219/react-class-completion"
 	},
-	"publisher": "zhanjingxi",
+	"icon": "psfe.jpeg",
+	"publisher": "psfe",
 	"categories": [],
 	"keywords": [
 		"react vscode"

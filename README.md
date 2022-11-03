@@ -2,6 +2,9 @@
 
 a vscode extension for react developer
 
+## Get Started
+
+
 ## features
 
 - [x] **support class name completions for `scss/css` from `.tsx` files below the same dir path**.
@@ -20,4 +23,4 @@ a vscode extension for react developer
   );
   ```
   ![](./variable_completion.jpg)
-  - [] listening for classname changing in `.tsx` file.
+  - [x] listening for classname changing in `.tsx` file.
