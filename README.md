@@ -1,4 +1,4 @@
-# react-class-completion
+# psfe-react-extension
 
 a vscode extension for react developer
 
