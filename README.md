@@ -4,9 +4,9 @@ a vscode extension for react developer
 
 ## changelogs
 
-- 0.0.3
+### 0.0.3
 
-completion & goto defination
+**completion & goto defination**
 
 ## Get Started
 
