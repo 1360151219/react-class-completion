@@ -2,6 +2,12 @@
 
 a vscode extension for react developer
 
+## changelogs
+
+- 0.0.3
+
+completion & goto defination
+
 ## Get Started
 
 search for 'psfe-react-extension' in VScode Extensions and install it.
