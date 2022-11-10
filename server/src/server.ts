@@ -13,15 +13,17 @@ import {
 } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
+import { getSCSSLanguageService } from 'vscode-css-languageservice';
+
 import * as path from 'path';
 import { readdirSync, readFileSync } from 'fs-extra';
 import { getDefinationClass, transformClassName } from './helper';
 import { IClassName } from './types';
-// Create a connection for the server, using Node's IPC as a transport.
-// Also include all preview / proposed LSP features.
 const connection = createConnection(ProposedFeatures.all);
 let classCompletion: CompletionItem[] = [];
+// Defination：记录在原tsx文件中捕获classname的元信息
 let classMetas: IClassName[] = [];
+let classInScss: string[] = [];
 // Create a simple text document manager.
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 connection.onInitialize((params: InitializeParams) => {
@@ -52,17 +54,17 @@ connection.onInitialized(() => {
 
 connection.onDidChangeConfiguration((change) => {});
 
-// 当tsx保存的时候才开始重新获取（只针对当前改变的文件发生改变）
+// 只针对当前改变的文件发生改变）
 documents.onDidSave((change) => {
   const { document } = change;
-  const extname = path.extname(document.uri);
-  if (extname === '.tsx') {
+  if (path.extname(document.uri) === '.tsx') {
     updateCompletion(document, document.uri);
   }
 });
 documents.onDidOpen(async (e) => {
-  console.log('open', e);
-  if (path.extname(e.document.uri) === '.scss') updateCompletion(e.document);
+  if (path.extname(e.document.uri) === '.scss') {
+    updateCompletion(e.document);
+  }
 });
 /**
  * 遍历同层级目录下的tsx/html文件
@@ -73,6 +75,7 @@ async function findHtmlInDir(
 ): Promise<CompletionItem[]> {
   const classname: IClassName[] = [];
   if (file) {
+    // 修改单个tsx时
     let filePath = file.slice(7);
     classname.push(
       ...transformClassName(readFileSync(filePath, { encoding: 'utf-8' }), file)
@@ -92,17 +95,40 @@ async function findHtmlInDir(
     });
   }
   classMetas = classname;
-  // TODO去重
+  // TODO去重: 修改一下逻辑，将tsx和scss修改的更新逻辑抽离
   return classname.map((c) => ({
     label: `.${c.className}`,
     kind: CompletionItemKind.Class,
     data: c,
   }));
 }
+async function filterInScss(cssDocument: TextDocument): Promise<string[]> {
+  const scssLanguageService = getSCSSLanguageService();
+  const existClass: string[] = [];
 
+  const scssAst = scssLanguageService.parseStylesheet(cssDocument);
+  (scssAst as any).accept((node: any) => {
+    // console.log('type:', node);
+    // console.log(node.getText());
+    if (node.type === 14) {
+      // 去掉首位字符 `.`
+      existClass.push(node.getText());
+    }
+    return true;
+  });
+  return existClass;
+}
+/**
+ * 更新补全类名的数组
+ * @param document
+ * @param file 单个tsx文件改变时才有，只解析对应的文件ast
+ */
 async function updateCompletion(document: TextDocument, file?: string) {
-  const newCompletion = await findHtmlInDir(document, file);
-  // console.log(newCompletion);
+  let newCompletion = await findHtmlInDir(document, file);
+  if (!file) {
+    classInScss = await filterInScss(document);
+  }
+  newCompletion = newCompletion.filter((c) => !classInScss.includes(c.label));
   classCompletion = newCompletion;
 }
 
