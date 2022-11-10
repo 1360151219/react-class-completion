@@ -23,6 +23,7 @@
 	"devDependencies": {
 		"@types/babel__core": "^7.1.19",
 		"@types/babel__helper-plugin-utils": "^7.10.0",
-		"@types/fs-extra": "^9.0.13"
+		"@types/fs-extra": "^9.0.13",
+		"vscode-css-languageservice": "^6.1.1"
 	}
 }
