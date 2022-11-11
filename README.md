@@ -33,3 +33,15 @@ search for 'psfe-react-extension' in VScode Extensions and install it.
   ```
   - [x] listening for classname changing in `.tsx` file.
 - [x] **support go to defination from classname in `scss/css` to the relative `tsx` file**
+
+## Q&A
+
+1. Why text incremental sync is invalid?
+
+you must config like this when server initialization
+
+```js
+  change: TextDocumentSyncKind.Incremental,
+  openClose: true, // make the connect.onDidContentTextDocument event sent to the lsp
+  save: true,
+```

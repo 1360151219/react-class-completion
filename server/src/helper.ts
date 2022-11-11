@@ -12,8 +12,6 @@ export function transformClassName(code: string, file: string) {
   transformFromAstSync(ast, code, {
     plugins: [[parseJsx, { classname, file }]],
   });
-  console.log('parse tsx', classname);
-
   return classname;
 }
 
