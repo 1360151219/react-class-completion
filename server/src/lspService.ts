@@ -9,7 +9,11 @@ import { getSCSSLanguageService } from 'vscode-css-languageservice';
 import { IClassName } from './types';
 import * as path from 'path';
 import { readdirSync, readFileSync } from 'fs-extra';
-import { getDefinationClass, transformClassName } from './helper';
+import {
+  getDefinationClass,
+  transformClassName,
+  removeDuplicateClass,
+} from './helper';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
 export class DocText {
@@ -86,11 +90,7 @@ export class LspProvider {
     classname.push(
       ...transformClassName(readFileSync(filePath, { encoding: 'utf-8' }), uri)
     );
-    return classname.map((c) => ({
-      label: `.${c.className}`,
-      kind: CompletionItemKind.Class,
-      data: c,
-    }));
+    this.classMetas.push(...removeDuplicateClass(this.classMetas, classname));
   }
   /**
    * 遍历同层级目录下的tsx/html文件
@@ -111,6 +111,7 @@ export class LspProvider {
     });
     this.classMetas = classname;
   }
+
   _filterInScss(cssDocument: TextDocument): void {
     const scssLanguageService = getSCSSLanguageService();
     const existClass: string[] = [];

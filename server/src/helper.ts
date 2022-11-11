@@ -37,7 +37,12 @@ export function createRange(m: RegExpMatchArray) {
     end,
   };
 }
-
+/**
+ * 返回触发Defination时匹配的类名
+ * @param text 该行的文本
+ * @param character 触发Defination事件时光标所在的column
+ * @returns
+ */
 export function getDefinationClass(text: string, character: number) {
   const wordReg = /\.([-_\d\w]+)/g;
   const m = text.matchAll(wordReg) || [];
@@ -49,4 +54,12 @@ export function getDefinationClass(text: string, character: number) {
     }
   }
   return '';
+}
+
+export function removeDuplicateClass(
+  classMetas: IClassName[],
+  updateMetas: IClassName[]
+) {
+  const existClass = classMetas.map((c) => c.className);
+  return updateMetas.filter((meta) => !existClass.includes(meta.className));
 }
