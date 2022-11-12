@@ -16,6 +16,7 @@ search for 'psfe-react-extension' in VScode Extensions and install it.
 
 ![](feature.gif)
 
+- [] **support incremental text sync**
 - [x] **support class name completions for `scss/css` from `.tsx` files below the same dir path**.
   - [x] ordinary className in JSXAttribute.
   - [x] variable className in JSXAttribute. example：
@@ -31,8 +32,9 @@ search for 'psfe-react-extension' in VScode Extensions and install it.
     </div>
   );
   ```
-  - [x] listening for classname changing in `.tsx` file.
+  - [x] listening for classname changing in `.tsx` file.(only in changed file)
 - [x] **support go to defination from classname in `scss/css` to the relative `tsx` file**
+  - [] scss variable support
 
 ## Q&A
 
