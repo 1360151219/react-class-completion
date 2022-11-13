@@ -16,7 +16,7 @@ search for 'psfe-react-extension' in VScode Extensions and install it.
 
 ![](feature.gif)
 
-- [] **support incremental text sync**
+- [x] **support incremental text sync and store & incremental parse algorithm**
 - [x] **support class name completions for `scss/css` from `.tsx` files below the same dir path**.
   - [x] ordinary className in JSXAttribute.
   - [x] variable className in JSXAttribute. example：
