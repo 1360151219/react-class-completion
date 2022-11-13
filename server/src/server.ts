@@ -86,5 +86,14 @@ connection.onDidChangeTextDocument((param) => {
   lspProvider.docMap.change(param.contentChanges, param.textDocument);
   if (getLanguageId(param.textDocument.uri) === 'typescriptreact') {
     lspProvider.updateTsx(param.textDocument.uri);
+  } else if (getLanguageId(param.textDocument.uri) === 'scss') {
+    lspProvider.updateScss(
+      TextDocument.create(
+        param.textDocument.uri,
+        'scss',
+        param.textDocument.version,
+        lspProvider.docMap.get(param.textDocument.uri.slice(7))!
+      )
+    );
   }
 });

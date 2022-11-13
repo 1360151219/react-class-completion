@@ -79,8 +79,8 @@ export class LspProvider {
    */
   init(document: TextDocumentItem) {
     if (getLanguageId(document.uri) !== 'scss') return;
-    this._parseTsxInDir(document.uri);
-    this._parseScss(
+    this._initTsxInDir(document.uri);
+    this._initScss(
       TextDocument.create(
         document.uri,
         document.languageId,
@@ -137,10 +137,13 @@ export class LspProvider {
     );
     this.classMetas.set(filePath, classname);
   }
+  updateScss(cssDocument: TextDocument): void {
+    this.classInScss = this._parseScss(cssDocument);
+  }
   /**
    * 初始化：遍历同层级目录下的tsx/html文件
    */
-  _parseTsxInDir(uri: string): void {
+  _initTsxInDir(uri: string): void {
     let filePath = uri.slice(7);
     let dirPath = path.resolve(filePath, '..');
     const files = readdirSync(dirPath).filter((file) => /tsx|html/.test(file));
@@ -157,8 +160,11 @@ export class LspProvider {
     });
   }
 
-  _parseScss(cssDocument: TextDocument): void {
+  _initScss(cssDocument: TextDocument): void {
     this.docMap.insert(cssDocument.uri.slice(7), cssDocument.getText());
+    this.classInScss = this._parseScss(cssDocument);
+  }
+  _parseScss(cssDocument: TextDocument): string[] {
     const scssLanguageService = getSCSSLanguageService();
     const existClass: string[] = [];
     const scssAst = scssLanguageService.parseStylesheet(cssDocument);
@@ -168,7 +174,7 @@ export class LspProvider {
       }
       return true;
     });
-    this.classInScss = existClass;
+    return existClass;
   }
   _getFlatClassMetas() {
     const res = [];
