@@ -74,8 +74,6 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
   return item;
 });
 connection.onDefinition((item: DefinitionParams): Definition => {
-  console.log(item);
-
   return lspProvider.definationProvider(item);
 });
 

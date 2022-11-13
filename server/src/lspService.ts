@@ -14,7 +14,7 @@ import { readdirSync, readFileSync } from 'fs-extra';
 import {
   getDefinationClass,
   transformClassName,
-  removeDuplicateClass,
+  // removeDuplicateClass,
   replaceByRange,
   enter,
   getLanguageId,
@@ -33,7 +33,7 @@ export class DocMap {
     ranges: TextDocumentContentChangeEvent[],
     vdoc: VersionedTextDocumentIdentifier
   ) {
-    const originContent = this.get(vdoc.uri);
+    const originContent = this.get(vdoc.uri.slice(7));
     if (!originContent) {
       return;
     }
@@ -65,11 +65,11 @@ export class LspProvider {
   /**
    * Defination：记录在原tsx文件中捕获classname的元信息
    */
-  classMetas: IClassName[];
+  classMetas: Map<string, IClassName[]>;
   classInScss: string[];
   docMap: DocMap;
   constructor() {
-    this.classMetas = [];
+    this.classMetas = new Map();
     this.classInScss = [];
     this.docMap = new DocMap();
   }
@@ -78,6 +78,7 @@ export class LspProvider {
    * @param document scss document
    */
   init(document: TextDocumentItem) {
+    if (getLanguageId(document.uri) !== 'scss') return;
     this._parseTsxInDir(document.uri);
     this._parseScss(
       TextDocument.create(
@@ -90,13 +91,17 @@ export class LspProvider {
   }
 
   completionProvider(): CompletionItem[] {
-    return this.classMetas
-      .map((c) => ({
-        label: `.${c.className}`,
-        kind: CompletionItemKind.Class,
-        data: c,
-      }))
-      .filter((c) => !this.classInScss.includes(c.label));
+    const completions = [];
+    for (let v of this.classMetas.values()) {
+      completions.push(
+        ...v.map((c) => ({
+          label: `.${c.className}`,
+          kind: CompletionItemKind.Class,
+          data: c,
+        }))
+      );
+    }
+    return completions.filter((c) => !this.classInScss.includes(c.label));
   }
   definationProvider(item: DefinitionParams): Definition {
     let t =
@@ -104,7 +109,7 @@ export class LspProvider {
         item.position.line
       ] || '';
     const definationClass = getDefinationClass(t, item.position.character);
-    const sourceDefination = this.classMetas.filter(
+    const sourceDefination = this._getFlatClassMetas().filter(
       (c) => c.className === definationClass
     );
     return sourceDefination.map((defination) => ({
@@ -130,15 +135,12 @@ export class LspProvider {
     classname.push(
       ...transformClassName(this.docMap.get(filePath) as string, uri)
     );
-    // TODO：解决修改类名时要将原本类名删除的问题。
-    // resolve：对单独文件进行重新parse，因此需要对classMetas表重构为： Map<uri,IClassName[]>
-    this.classMetas.push(...removeDuplicateClass(this.classMetas, classname));
+    this.classMetas.set(filePath, classname);
   }
   /**
    * 初始化：遍历同层级目录下的tsx/html文件
    */
   _parseTsxInDir(uri: string): void {
-    const classname: IClassName[] = [];
     let filePath = uri.slice(7);
     let dirPath = path.resolve(filePath, '..');
     const files = readdirSync(dirPath).filter((file) => /tsx|html/.test(file));
@@ -148,9 +150,11 @@ export class LspProvider {
         encoding: 'utf-8',
       });
       this.docMap.insert(targetFilePath, targetFileContent);
-      classname.push(...transformClassName(targetFileContent, targetFilePath));
+      this.classMetas.set(
+        targetFilePath,
+        transformClassName(targetFileContent, targetFilePath)
+      );
     });
-    this.classMetas = classname;
   }
 
   _parseScss(cssDocument: TextDocument): void {
@@ -165,5 +169,12 @@ export class LspProvider {
       return true;
     });
     this.classInScss = existClass;
+  }
+  _getFlatClassMetas() {
+    const res = [];
+    for (let v of this.classMetas.values()) {
+      res.push(...v);
+    }
+    return res;
   }
 }
