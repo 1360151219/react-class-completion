@@ -1,8 +1,23 @@
 import { transformFromAstSync } from '@babel/core';
 import { parse } from '@babel/parser';
+import path = require('path');
+import { Range, TextDocument } from 'vscode-languageserver-textdocument';
 import parseJsx from './plugins/parseJsx';
 import { IClassName } from './types';
 
+export function enter() {
+  // switch (process.platform) {
+  //   case 'win32':
+  //     return '\r\n';
+  //   case 'linux':
+  //     return '\n';
+  //   case 'darwin': // macos
+  //     return '\r';
+  //   default:
+  //     return '\n';
+  // }
+  return '\n';
+}
 export function transformClassName(code: string, file: string) {
   const ast = parse(code, {
     sourceType: 'unambiguous',
@@ -53,7 +68,7 @@ export function getDefinationClass(text: string, character: number) {
       return i[1];
     }
   }
-  return '';
+  return 'error';
 }
 
 export function removeDuplicateClass(
@@ -62,4 +77,51 @@ export function removeDuplicateClass(
 ) {
   const existClass = classMetas.map((c) => c.className);
   return updateMetas.filter((meta) => !existClass.includes(meta.className));
+}
+
+export function getLanguageId(uri: string) {
+  switch (path.extname(uri)) {
+    case '.tsx': {
+      return 'typescriptreact';
+    }
+    case '.scss': {
+      return 'scss';
+    }
+    default: {
+      return '';
+    }
+  }
+}
+
+export function replaceByRange(doc: TextDocument, range: Range, text: string) {
+  const { start, end } = range;
+  let newContent = '';
+  let startOffset = doc.offsetAt(start);
+  let endOffset = doc.offsetAt(end);
+  const origin = doc.getText();
+  const len = origin.length;
+  // 新增文本时，startOffset = len
+  if (startOffset >= len) {
+    newContent = origin + text;
+  } else {
+    // 修改文本
+    const preText = origin.slice(0, startOffset);
+    const postText = origin.slice(endOffset);
+    newContent = preText + text + postText;
+  }
+  // console.log(
+  //   'origin',
+  //   origin,
+  //   'len',
+  //   len,
+  //   'start',
+  //   startOffset,
+  //   'end',
+  //   endOffset,
+  //   'newlen',
+  //   newContent.length,
+  //   'new',
+  //   newContent
+  // );
+  return newContent;
 }
