@@ -12,6 +12,12 @@ a vscode extension for react developer
 
 **incremental text sync & store & parse**
 
+### 0.0.5
+
+**Better use under the directory dimension**
+
+- [fix: issue 4](https://github.com/1360151219/react-class-completion/issues/4)
+
 ## Get Started
 
 search for 'psfe-react-extension' in VScode Extensions and install it.
@@ -20,7 +26,7 @@ search for 'psfe-react-extension' in VScode Extensions and install it.
 
 💡[Tips] The following functions are parsed and supported **in the directory dimension**.
 
-For instance，in this following structure，we can get the class completions which are parsed from the tsx files in the same dir path in the all scss files 
+For instance，in this following structure，we can get the class completions which are parsed from the tsx files in the same dir path in the all scss files
 
 ```
 |--index1.tsx
