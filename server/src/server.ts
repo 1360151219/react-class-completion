@@ -63,8 +63,8 @@ connection.listen();
 
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-  (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-    return lspProvider.completionProvider();
+  (textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+    return lspProvider.completionProvider(textDocumentPosition);
   }
 );
 // This handler resolves additional information for the item selected in
@@ -79,6 +79,7 @@ connection.onDefinition((item: DefinitionParams): Definition => {
 
 // 要在listen之后
 // TODO: 当打开scss文件的时候，且是不同目录下的scss文件才会初始化
+// resolve: 重构classMetas表，重构成 Map<dirname,Map<uri,IClassName[]>>
 connection.onDidOpenTextDocument((param) => {
   lspProvider.init(param.textDocument);
 });
