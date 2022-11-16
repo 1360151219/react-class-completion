@@ -83,6 +83,7 @@ export class LspProvider {
       this.docMap.has(document.uri.slice(7))
     )
       return;
+    // TODO: 同一目录下不同的scss文件的共享数据
     this._initTsxInDir(document.uri);
     this._initScss(
       TextDocument.create(
