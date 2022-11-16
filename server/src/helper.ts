@@ -6,7 +6,7 @@ import parseJsx from './plugins/parseJsx';
 import { IClassName } from './types';
 
 export function enter() {
-  // switch (process.platform) {
+  // switch (process.platform) { xxx
   //   case 'win32':
   //     return '\r\n';
   //   case 'linux':
