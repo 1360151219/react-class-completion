@@ -21,10 +21,10 @@ import {
 } from './helper';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { dirname, resolve } from 'path';
+/**
+ * Map\<uri:文件Uri,context:文件内容\>
+ */
 export class DocMap {
-  /**
-   * Map\<uri:文件Uri,context:文件内容\>
-   */
   docs: Map<string, string>;
   constructor() {
     this.docs = new Map();
@@ -63,14 +63,26 @@ export class DocMap {
 }
 export class LspProvider {
   /**
-   * Map<dirname,Map<uri,IClassName[]>>
+   * 用于存放各个目录下tsx文件的类名信息，结构如下：
+   * ```ts
+   * Map<dirname, Map<uri, IClassName[]>>
+   * ```
    */
   classMetas: Map<string, Map<string, IClassName[]>>;
-  classInScss: string[];
+  /**
+   * 用于存放每个scss文件中已存在的类名，结构如下：
+   * ```ts
+   * Map<scssUri, Set<string>>
+   * ```
+   */
+  classInScss: Map<string, Set<string>>;
+  /**
+   * 用于存放各个文件的内容信息
+   */
   docMap: DocMap;
   constructor() {
     this.classMetas = new Map();
-    this.classInScss = [];
+    this.classInScss = new Map();
     this.docMap = new DocMap();
   }
   /**
@@ -78,12 +90,12 @@ export class LspProvider {
    * @param document scss document
    */
   init(document: TextDocumentItem) {
+    // 过滤掉其他格式文件以及非首次解析的scss文件
     if (
       getLanguageId(document.uri) !== 'scss' ||
       this.docMap.has(document.uri.slice(7))
     )
       return;
-    // TODO: 同一目录下不同的scss文件的共享数据
     this._initTsxInDir(document.uri);
     this._initScss(
       TextDocument.create(
@@ -97,12 +109,13 @@ export class LspProvider {
 
   completionProvider(params: TextDocumentPositionParams): CompletionItem[] {
     const dirName = dirname(params.textDocument.uri.slice(7));
-    const dirMap = this.classMetas.get(dirName);
-    if (!dirMap) {
+    const dirClassMap = this.classMetas.get(dirName);
+    const scssClassSet = this.classInScss.get(params.textDocument.uri.slice(7));
+    if (!dirClassMap) {
       return [];
     }
     const completions = [];
-    for (let v of dirMap.values()) {
+    for (let v of dirClassMap.values()) {
       completions.push(
         ...v.map((c) => ({
           label: `.${c.className}`,
@@ -111,7 +124,9 @@ export class LspProvider {
         }))
       );
     }
-    return completions.filter((c) => !this.classInScss.includes(c.label));
+    console.log(completions, scssClassSet);
+
+    return completions.filter((c) => !scssClassSet?.has(c.label));
   }
   definationProvider(item: DefinitionParams): Definition {
     const dirName = dirname(item.textDocument.uri.slice(7));
@@ -151,14 +166,21 @@ export class LspProvider {
     dirMap.set(filePath, classname);
   }
   updateScss(cssDocument: TextDocument): void {
-    this.classInScss = this._parseScss(cssDocument);
+    this.classInScss.set(
+      cssDocument.uri.slice(7),
+      this._parseScss(cssDocument)
+    );
   }
   /**
    * 初始化：遍历同层级目录下的tsx/html文件
    */
-  _initTsxInDir(uri: string): void {
-    let filePath = uri.slice(7);
-    let dirPath = resolve(filePath, '..');
+  _initTsxInDir(scssUri: string): void {
+    let scssFilePath = scssUri.slice(7);
+    let dirPath = resolve(scssFilePath, '..');
+    if (this.classMetas.has(dirPath)) {
+      // 如果是相同目录的scss文件，无需重新解析。
+      return;
+    }
     const dirMap = new Map();
     const files = readdirSync(dirPath).filter((file) => /tsx|html/.test(file));
     files.forEach((fileName) => {
@@ -177,15 +199,18 @@ export class LspProvider {
 
   _initScss(cssDocument: TextDocument): void {
     this.docMap.insert(cssDocument.uri.slice(7), cssDocument.getText());
-    this.classInScss = this._parseScss(cssDocument);
+    this.classInScss.set(
+      cssDocument.uri.slice(7),
+      this._parseScss(cssDocument)
+    );
   }
-  _parseScss(cssDocument: TextDocument): string[] {
+  _parseScss(cssDocument: TextDocument): Set<string> {
     const scssLanguageService = getSCSSLanguageService();
-    const existClass: string[] = [];
+    const existClass: Set<string> = new Set();
     const scssAst = scssLanguageService.parseStylesheet(cssDocument);
     (scssAst as any).accept((node: any) => {
       if (node.type === 14) {
-        existClass.push(node.getText());
+        existClass.add(node.getText());
       }
       return true;
     });

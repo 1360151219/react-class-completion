@@ -48,19 +48,6 @@ connection.listen();
 // but could happen with other clients.
 // Cache the settings of all open documents
 
-// 只针对当前改变的文件发生改变）
-// documents.onDidSave((change) => {
-//   console.log('change');
-//   const { document } = change;
-//   if (path.extname(document.uri) === '.tsx') {
-//     lspProvider.updateTsx(document.uri);
-//   }
-// });
-// documents.onDidOpen(async (e) => {
-//   console.log('e', e);
-//   lspProvider.init(e.document);
-// });
-
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
   (textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
