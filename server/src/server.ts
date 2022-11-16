@@ -48,23 +48,10 @@ connection.listen();
 // but could happen with other clients.
 // Cache the settings of all open documents
 
-// 只针对当前改变的文件发生改变）
-// documents.onDidSave((change) => {
-//   console.log('change');
-//   const { document } = change;
-//   if (path.extname(document.uri) === '.tsx') {
-//     lspProvider.updateTsx(document.uri);
-//   }
-// });
-// documents.onDidOpen(async (e) => {
-//   console.log('e', e);
-//   lspProvider.init(e.document);
-// });
-
 // This handler provides the initial list of the completion items.
 connection.onCompletion(
-  (_textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
-    return lspProvider.completionProvider();
+  (textDocumentPosition: TextDocumentPositionParams): CompletionItem[] => {
+    return lspProvider.completionProvider(textDocumentPosition);
   }
 );
 // This handler resolves additional information for the item selected in
@@ -78,7 +65,6 @@ connection.onDefinition((item: DefinitionParams): Definition => {
 });
 
 // 要在listen之后
-// TODO: 当打开scss文件的时候，且是不同目录下的scss文件才会初始化
 connection.onDidOpenTextDocument((param) => {
   lspProvider.init(param.textDocument);
 });

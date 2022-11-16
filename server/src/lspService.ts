@@ -6,10 +6,10 @@ import {
   TextDocumentItem,
   TextDocumentContentChangeEvent,
   VersionedTextDocumentIdentifier,
+  TextDocumentPositionParams,
 } from 'vscode-languageserver';
 import { getSCSSLanguageService } from 'vscode-css-languageservice';
 import { IClassName } from './types';
-import * as path from 'path';
 import { readdirSync, readFileSync } from 'fs-extra';
 import {
   getDefinationClass,
@@ -20,11 +20,11 @@ import {
   getLanguageId,
 } from './helper';
 import { TextDocument } from 'vscode-languageserver-textdocument';
-
+import { dirname, resolve } from 'path';
+/**
+ * Map\<uri:文件Uri,context:文件内容\>
+ */
 export class DocMap {
-  /**
-   * Map\<uri:文件Uri,context:文件内容\>
-   */
   docs: Map<string, string>;
   constructor() {
     this.docs = new Map();
@@ -63,14 +63,26 @@ export class DocMap {
 }
 export class LspProvider {
   /**
-   * Defination：记录在原tsx文件中捕获classname的元信息
+   * 用于存放各个目录下tsx文件的类名信息，结构如下：
+   * ```ts
+   * Map<dirname, Map<uri, IClassName[]>>
+   * ```
    */
-  classMetas: Map<string, IClassName[]>;
-  classInScss: string[];
+  classMetas: Map<string, Map<string, IClassName[]>>;
+  /**
+   * 用于存放每个scss文件中已存在的类名，结构如下：
+   * ```ts
+   * Map<scssUri, Set<string>>
+   * ```
+   */
+  classInScss: Map<string, Set<string>>;
+  /**
+   * 用于存放各个文件的内容信息
+   */
   docMap: DocMap;
   constructor() {
     this.classMetas = new Map();
-    this.classInScss = [];
+    this.classInScss = new Map();
     this.docMap = new DocMap();
   }
   /**
@@ -78,7 +90,12 @@ export class LspProvider {
    * @param document scss document
    */
   init(document: TextDocumentItem) {
-    if (getLanguageId(document.uri) !== 'scss') return;
+    // 过滤掉其他格式文件以及非首次解析的scss文件
+    if (
+      getLanguageId(document.uri) !== 'scss' ||
+      this.docMap.has(document.uri.slice(7))
+    )
+      return;
     this._initTsxInDir(document.uri);
     this._initScss(
       TextDocument.create(
@@ -90,26 +107,35 @@ export class LspProvider {
     );
   }
 
-  completionProvider(): CompletionItem[] {
+  completionProvider(params: TextDocumentPositionParams): CompletionItem[] {
+    const dirName = dirname(params.textDocument.uri.slice(7));
+    const dirClassMap = this.classMetas.get(dirName);
+    const scssClassSet = this.classInScss.get(params.textDocument.uri.slice(7));
+    if (!dirClassMap) {
+      return [];
+    }
     const completions = [];
-    for (let v of this.classMetas.values()) {
+    for (let v of dirClassMap.values()) {
       completions.push(
         ...v.map((c) => ({
           label: `.${c.className}`,
           kind: CompletionItemKind.Class,
-          data: c,
+          data: `.${c.className}`,
         }))
       );
     }
-    return completions.filter((c) => !this.classInScss.includes(c.label));
+    console.log(completions, scssClassSet);
+
+    return completions.filter((c) => !scssClassSet?.has(c.label));
   }
   definationProvider(item: DefinitionParams): Definition {
+    const dirName = dirname(item.textDocument.uri.slice(7));
     let t =
       this.docMap.get(item.textDocument.uri.slice(7))?.split(enter())[
         item.position.line
       ] || '';
     const definationClass = getDefinationClass(t, item.position.character);
-    const sourceDefination = this._getFlatClassMetas().filter(
+    const sourceDefination = this._getFlatClassMetas(dirName).filter(
       (c) => c.className === definationClass
     );
     return sourceDefination.map((defination) => ({
@@ -129,56 +155,70 @@ export class LspProvider {
 
   updateTsx(uri: string) {
     // 修改单个tsx时
+    const dirMap = this.classMetas.get(dirname(uri.slice(7)));
+    if (!dirMap) return;
     const classname: IClassName[] = [];
     let filePath = uri.slice(7); // TODO：documentUri在不同系统下的问题
     if (!this.docMap.has(filePath)) return;
     classname.push(
       ...transformClassName(this.docMap.get(filePath) as string, uri)
     );
-    this.classMetas.set(filePath, classname);
+    dirMap.set(filePath, classname);
   }
   updateScss(cssDocument: TextDocument): void {
-    this.classInScss = this._parseScss(cssDocument);
+    this.classInScss.set(
+      cssDocument.uri.slice(7),
+      this._parseScss(cssDocument)
+    );
   }
   /**
    * 初始化：遍历同层级目录下的tsx/html文件
    */
-  _initTsxInDir(uri: string): void {
-    let filePath = uri.slice(7);
-    let dirPath = path.resolve(filePath, '..');
+  _initTsxInDir(scssUri: string): void {
+    let scssFilePath = scssUri.slice(7);
+    let dirPath = resolve(scssFilePath, '..');
+    if (this.classMetas.has(dirPath)) {
+      // 如果是相同目录的scss文件，无需重新解析。
+      return;
+    }
+    const dirMap = new Map();
     const files = readdirSync(dirPath).filter((file) => /tsx|html/.test(file));
     files.forEach((fileName) => {
-      const targetFilePath = path.resolve(dirPath, fileName);
+      const targetFilePath = resolve(dirPath, fileName);
       const targetFileContent = readFileSync(targetFilePath, {
         encoding: 'utf-8',
       });
       this.docMap.insert(targetFilePath, targetFileContent);
-      this.classMetas.set(
+      dirMap.set(
         targetFilePath,
         transformClassName(targetFileContent, targetFilePath)
       );
     });
+    this.classMetas.set(dirPath, dirMap);
   }
 
   _initScss(cssDocument: TextDocument): void {
     this.docMap.insert(cssDocument.uri.slice(7), cssDocument.getText());
-    this.classInScss = this._parseScss(cssDocument);
+    this.classInScss.set(
+      cssDocument.uri.slice(7),
+      this._parseScss(cssDocument)
+    );
   }
-  _parseScss(cssDocument: TextDocument): string[] {
+  _parseScss(cssDocument: TextDocument): Set<string> {
     const scssLanguageService = getSCSSLanguageService();
-    const existClass: string[] = [];
+    const existClass: Set<string> = new Set();
     const scssAst = scssLanguageService.parseStylesheet(cssDocument);
     (scssAst as any).accept((node: any) => {
       if (node.type === 14) {
-        existClass.push(node.getText());
+        existClass.add(node.getText());
       }
       return true;
     });
     return existClass;
   }
-  _getFlatClassMetas() {
+  _getFlatClassMetas(dirName: string) {
     const res = [];
-    for (let v of this.classMetas.values()) {
+    for (let v of this.classMetas.get(dirName)!.values()) {
       res.push(...v);
     }
     return res;

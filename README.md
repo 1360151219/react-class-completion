@@ -18,6 +18,18 @@ search for 'psfe-react-extension' in VScode Extensions and install it.
 
 ## features
 
+💡[Tips] The following functions are parsed and supported **in the directory dimension**.
+
+For instance，in this following structure，we can get the class completions which are parsed from the tsx files in the same dir path in the all scss files 
+
+```
+|--index1.tsx
+|--index2.tsx
+|--    ...tsx
+|--index1.scss
+|--index2.scss
+```
+
 ![](feature.gif)
 
 - [x] 🌟 **support incremental text sync and store & incremental parse algorithm**
