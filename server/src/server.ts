@@ -19,7 +19,7 @@ const connection = createConnection(ProposedFeatures.all);
 let lspProvider: LspProvider;
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 connection.onInitialize((params: InitializeParams) => {
-  // params.rootPath
+  // params.rootPath xxx
   lspProvider = new LspProvider();
   const result: InitializeResult = {
     capabilities: {
