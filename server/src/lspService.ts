@@ -73,10 +73,10 @@ export class LspProvider {
   /**
    * 用于存放每个scss文件中已存在的类名，结构如下：
    * ```ts
-   * Map<scssUri, Set<string>>
+   * Map<scssUri, Map<originClass,className>>
    * ```
    */
-  classInScss: Map<string, Set<string>>;
+  classInScss: Map<string, Map<string, string>>;
   /**
    * 用于存放各个文件的内容信息
    */
@@ -111,7 +111,9 @@ export class LspProvider {
   completionProvider(params: TextDocumentPositionParams): CompletionItem[] {
     const dirName = dirname(params.textDocument.uri.slice(7));
     const dirClassMap = this.classMetas.get(dirName);
-    const scssClassSet = this.classInScss.get(params.textDocument.uri.slice(7));
+    const scssClassSet = new Set(
+      this.classInScss.get(params.textDocument.uri.slice(7))?.values()
+    );
     if (!dirClassMap) {
       return [];
     }
@@ -127,7 +129,7 @@ export class LspProvider {
     }
     return completions.filter((c) => !scssClassSet?.has(c.label));
   }
-  definationProvider(item: DefinitionParams): Definition {
+  definationProvider(item: DefinitionParams): Definition | undefined {
     const dirName = dirname(item.textDocument.uri.slice(7));
     let t =
       this.docMap.get(item.textDocument.uri.slice(7))?.split(enter())[
@@ -136,6 +138,9 @@ export class LspProvider {
     const definationClass = getDefinationClass(t, item.position.character);
     console.log(definationClass);
 
+    if (!definationClass) {
+      return;
+    }
     const sourceDefination = this._getFlatClassMetas(dirName).filter(
       (c) => c.className === definationClass
     );
@@ -205,7 +210,7 @@ export class LspProvider {
       this._parseScss(cssDocument)
     );
   }
-  _parseScss(cssDocument: TextDocument): Set<string> {
+  _parseScss(cssDocument: TextDocument): Map<string, string> {
     const scssLanguageService = getSCSSLanguageService();
     const variablesMap = new Map();
     const scssAst = scssLanguageService.parseStylesheet(cssDocument);
@@ -231,7 +236,7 @@ export class LspProvider {
       }
       return true;
     });
-    return new Set(variablesMap.values());
+    return variablesMap;
   }
   _getFlatClassMetas(dirName: string) {
     const res = [];

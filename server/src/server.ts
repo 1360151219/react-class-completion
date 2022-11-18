@@ -60,7 +60,7 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
   item.detail = item.data;
   return item;
 });
-connection.onDefinition((item: DefinitionParams): Definition => {
+connection.onDefinition((item: DefinitionParams): Definition | undefined => {
   return lspProvider.definationProvider(item);
 });
 

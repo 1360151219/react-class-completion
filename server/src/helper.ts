@@ -59,7 +59,8 @@ export function createRange(m: RegExpMatchArray) {
  * @returns
  */
 export function getDefinationClass(text: string, character: number) {
-  const wordReg = /\.([-_\d\w]+)/g;
+  // eslint-disable-next-line no-useless-escape
+  const wordReg = /\.([\S]+)/g;
   const m = text.matchAll(wordReg) || [];
   for (const i of m) {
     const range = createRange(i);
@@ -68,7 +69,7 @@ export function getDefinationClass(text: string, character: number) {
       return i[1];
     }
   }
-  return 'error';
+  return '';
 }
 
 export function getLanguageId(uri: string) {
