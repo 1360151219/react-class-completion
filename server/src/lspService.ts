@@ -18,6 +18,7 @@ import {
   replaceByRange,
   enter,
   getLanguageId,
+  getKeyFromMap,
 } from './helper';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { dirname, resolve } from 'path';
@@ -107,7 +108,6 @@ export class LspProvider {
       )
     );
   }
-
   completionProvider(params: TextDocumentPositionParams): CompletionItem[] {
     const dirName = dirname(params.textDocument.uri.slice(7));
     const dirClassMap = this.classMetas.get(dirName);
@@ -123,11 +123,20 @@ export class LspProvider {
         ...v.map((c) => ({
           label: `.${c.className}`,
           kind: CompletionItemKind.Class,
-          data: `.${c.className}`,
+          data: params.textDocument.uri.slice(7),
         }))
       );
     }
     return completions.filter((c) => !scssClassSet?.has(c.label));
+  }
+  resolveCompletion(item: CompletionItem): CompletionItem {
+    // const scssClassMap = this.classInScss.get(item?.data);
+    // const originClass = scssClassMap && getKeyFromMap(scssClassMap, item.label);
+    item.detail = item.label;
+    // if (originClass) {
+    // item.label = originClass;
+    // }
+    return item;
   }
   definationProvider(item: DefinitionParams): Definition | undefined {
     const dirName = dirname(item.textDocument.uri.slice(7));

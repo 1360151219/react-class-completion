@@ -57,8 +57,7 @@ connection.onCompletion(
 // This handler resolves additional information for the item selected in
 // the completion list.
 connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
-  item.detail = item.data;
-  return item;
+  return lspProvider.resolveCompletion(item);
 });
 connection.onDefinition((item: DefinitionParams): Definition | undefined => {
   return lspProvider.definationProvider(item);

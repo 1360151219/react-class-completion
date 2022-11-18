@@ -127,7 +127,17 @@ export function replaceVariableClass(
   let m: RegExpExecArray | null;
   let v = value;
   while ((m = variableClassSelectorReg.exec(v))) {
-    v = value.replace(variableClassSelectorReg, variablesMap.get(m[1]) ?? '');
+    v = v.replace(variableClassSelectorReg, variablesMap.get(m[1]) ?? '');
   }
   return v;
+}
+
+export function getKeyFromMap<T extends Map<string, string>>(
+  map: T,
+  value: string
+) {
+  for (let [k, v] of map.entries()) {
+    if (v === value) return k;
+  }
+  return;
 }
