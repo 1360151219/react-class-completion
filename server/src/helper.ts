@@ -71,14 +71,6 @@ export function getDefinationClass(text: string, character: number) {
   return 'error';
 }
 
-export function removeDuplicateClass(
-  classMetas: IClassName[],
-  updateMetas: IClassName[]
-) {
-  const existClass = classMetas.map((c) => c.className);
-  return updateMetas.filter((meta) => !existClass.includes(meta.className));
-}
-
 export function getLanguageId(uri: string) {
   switch (path.extname(uri)) {
     case '.tsx': {
@@ -124,4 +116,17 @@ export function replaceByRange(doc: TextDocument, range: Range, text: string) {
   //   newContent
   // );
   return newContent;
+}
+
+export function replaceVariableClass(
+  value: string,
+  variablesMap: Map<string, string>
+): string {
+  const variableClassSelectorReg = /#\{(\$[\w\d]+)\}/g;
+  let m: RegExpExecArray | null;
+  let v = value;
+  while ((m = variableClassSelectorReg.exec(v))) {
+    v = value.replace(variableClassSelectorReg, variablesMap.get(m[1]) ?? '');
+  }
+  return v;
 }

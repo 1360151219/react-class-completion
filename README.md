@@ -56,7 +56,23 @@ For instance，in this following structure，we can get the class completions wh
   ```
   - [x] listening for classname changing in `.tsx` file.(only in changed file)
 - [x] 🌟 **support go to defination from classname in `scss/css` to the relative `tsx` file**
+
   - [] scss variable support
+
+  ```scss
+  // For Example
+  $prefix: foo;
+  .#{$prefix}-#{$prefix} {
+    &-2 {
+      &-4 {
+      }
+    }
+    .foo-foo-4 {
+    }
+    .foo {
+    }
+  }
+  ```
 
 ## Q&A
 

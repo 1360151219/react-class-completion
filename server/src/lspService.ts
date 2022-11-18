@@ -14,13 +14,14 @@ import { readdirSync, readFileSync } from 'fs-extra';
 import {
   getDefinationClass,
   transformClassName,
-  // removeDuplicateClass,
+  replaceVariableClass,
   replaceByRange,
   enter,
   getLanguageId,
 } from './helper';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { dirname, resolve } from 'path';
+
 /**
  * Map\<uri:文件Uri,context:文件内容\>
  */
@@ -124,8 +125,6 @@ export class LspProvider {
         }))
       );
     }
-    console.log(completions, scssClassSet);
-
     return completions.filter((c) => !scssClassSet?.has(c.label));
   }
   definationProvider(item: DefinitionParams): Definition {
@@ -135,6 +134,8 @@ export class LspProvider {
         item.position.line
       ] || '';
     const definationClass = getDefinationClass(t, item.position.character);
+    console.log(definationClass);
+
     const sourceDefination = this._getFlatClassMetas(dirName).filter(
       (c) => c.className === definationClass
     );
@@ -206,15 +207,31 @@ export class LspProvider {
   }
   _parseScss(cssDocument: TextDocument): Set<string> {
     const scssLanguageService = getSCSSLanguageService();
-    const existClass: Set<string> = new Set();
+    const variablesMap = new Map();
     const scssAst = scssLanguageService.parseStylesheet(cssDocument);
     (scssAst as any).accept((node: any) => {
+      if (node.type === 37) {
+        // VariableDeclaration
+        variablesMap.set(node.variable.getText(), node.value.getText());
+      }
       if (node.type === 14) {
-        existClass.add(node.getText());
+        // ClassSelector
+        const originVal = node.getText();
+        const value = replaceVariableClass(originVal, variablesMap);
+        variablesMap.set(originVal, value);
+        // existClass.add(value);
+      }
+      if (node.type === 7) {
+        // SelectorCombinator: &-2
+        const originVal = node.getText();
+        const p = node.findAParent(20);
+        const parentVal = p.getParent().selectors.getText();
+        const value = originVal.replace('&', variablesMap.get(parentVal));
+        variablesMap.set(originVal, value);
       }
       return true;
     });
-    return existClass;
+    return new Set(variablesMap.values());
   }
   _getFlatClassMetas(dirName: string) {
     const res = [];
