@@ -4,7 +4,7 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from 'path';
-import { workspace, ExtensionContext } from 'vscode';
+import { workspace, commands, window, ExtensionContext, Range } from 'vscode';
 import {
   LanguageClient,
   LanguageClientOptions,
@@ -65,6 +65,23 @@ export function activate(context: ExtensionContext) {
 
   // Start the client. This will also launch the server
   client.start();
+
+  context.subscriptions.push(
+    commands.registerCommand(
+      'codelens_scss_combinator',
+      (start: number, end: number, value: string) => {
+        const editor = window.activeTextEditor;
+        const { document } = editor;
+        const range = new Range(
+          document.positionAt(start),
+          document.positionAt(end)
+        );
+        editor?.edit((builder) => {
+          builder.replace(range, value);
+        });
+      }
+    )
+  );
 }
 
 export function deactivate(): Thenable<void> | undefined {

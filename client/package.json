@@ -12,6 +12,14 @@
 	"engines": {
 		"vscode": "^1.63.0"
 	},
+	"contributes": {
+		"commands": [
+			{
+				"command": "codelens_scss_combinator",
+				"title": "codelens_scss_combinator"
+			}
+		]
+	},
 	"dependencies": {
 		"vscode-languageclient": "^7.0.0"
 	},

@@ -9,6 +9,8 @@ import {
   CompletionItem,
   DefinitionParams,
   Definition,
+  CodeLensParams,
+  CodeLens,
 } from 'vscode-languageserver/node';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 
@@ -33,6 +35,9 @@ connection.onInitialize((params: InitializeParams) => {
         resolveProvider: true,
       },
       definitionProvider: true,
+      codeLensProvider: {
+        resolveProvider: true,
+      },
     },
   };
   return result;
@@ -62,7 +67,15 @@ connection.onCompletionResolve((item: CompletionItem): CompletionItem => {
 connection.onDefinition((item: DefinitionParams): Definition | undefined => {
   return lspProvider.definationProvider(item);
 });
-
+connection.onCodeLens((item: CodeLensParams): CodeLens[] | undefined => {
+  if (getLanguageId(item.textDocument.uri) === 'scss') {
+    return lspProvider.codelens;
+  }
+});
+connection.onCodeLensResolve((params: CodeLens) => {
+  console.log('===resolve', params);
+  return params;
+});
 // 要在listen之后
 connection.onDidOpenTextDocument((param) => {
   lspProvider.init(param.textDocument);

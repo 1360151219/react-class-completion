@@ -7,6 +7,7 @@ import {
   TextDocumentContentChangeEvent,
   VersionedTextDocumentIdentifier,
   TextDocumentPositionParams,
+  CodeLens,
 } from 'vscode-languageserver';
 import { getSCSSLanguageService } from 'vscode-css-languageservice';
 import { IClassName } from './types';
@@ -18,7 +19,7 @@ import {
   replaceByRange,
   enter,
   getLanguageId,
-  getKeyFromMap,
+  // getKeyFromMap,
 } from './helper';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { dirname, resolve } from 'path';
@@ -82,10 +83,12 @@ export class LspProvider {
    * 用于存放各个文件的内容信息
    */
   docMap: DocMap;
+  codelens: CodeLens[];
   constructor() {
     this.classMetas = new Map();
     this.classInScss = new Map();
     this.docMap = new DocMap();
+    this.codelens = [];
   }
   /**
    * when open the .scss file the init function will trigger
@@ -107,6 +110,9 @@ export class LspProvider {
         document.text
       )
     );
+  }
+  codelensProvider() {
+    return this.codelens;
   }
   completionProvider(params: TextDocumentPositionParams): CompletionItem[] {
     const dirName = dirname(params.textDocument.uri.slice(7));
@@ -145,8 +151,6 @@ export class LspProvider {
         item.position.line
       ] || '';
     const definationClass = getDefinationClass(t, item.position.character);
-    console.log(definationClass);
-
     if (!definationClass) {
       return;
     }
@@ -222,8 +226,49 @@ export class LspProvider {
   _parseScss(cssDocument: TextDocument): Map<string, string> {
     const scssLanguageService = getSCSSLanguageService();
     const variablesMap = new Map();
+    this.codelens = [];
     const scssAst = scssLanguageService.parseStylesheet(cssDocument);
     (scssAst as any).accept((node: any) => {
+      if (node.type === 3) {
+        // codeLens
+        if (node.isNested()) {
+          const selValue = replaceVariableClass(
+            node.getSelectors().getText(),
+            variablesMap
+          );
+          // 这里一定要先从node.getParent()开始，原因可见findParent的源码：(problem：从当前节点开始寻找。)
+          const parentRuleset = node.getParent().findParent(3);
+          const parentVal = variablesMap.get(
+            parentRuleset.getSelectors().getText()
+          );
+          // 由于自动补全一定是编译后类名。因此匹配编译后的父类类名
+          if (selValue.startsWith(parentVal)) {
+            const range = {
+              start: {
+                line: cssDocument.positionAt(node.offset).line,
+                character: 0,
+              },
+              end: {
+                line: cssDocument.positionAt(node.offset).line,
+                character: 0,
+              },
+            };
+            this.codelens.push({
+              range,
+              command: {
+                title: selValue.replace(parentVal, '&'),
+                command: 'codelens_scss_combinator',
+                arguments: [
+                  node.getSelectors().offset,
+                  node.getSelectors().end,
+                  selValue.replace(parentVal, '&'),
+                ],
+              },
+              data: parentVal,
+            });
+          }
+        }
+      }
       if (node.type === 37) {
         // VariableDeclaration
         variablesMap.set(node.variable.getText(), node.value.getText());
@@ -233,7 +278,6 @@ export class LspProvider {
         const originVal = node.getText();
         const value = replaceVariableClass(originVal, variablesMap);
         variablesMap.set(originVal, value);
-        // existClass.add(value);
       }
       if (node.type === 7) {
         // SelectorCombinator: &-2
