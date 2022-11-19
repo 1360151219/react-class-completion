@@ -16,6 +16,10 @@ a vscode extension for react developer
 
 **Better use under the directory dimension**
 
+### 0.0.6
+
+**CodeLens: transform to selector combinator**
+
 - [fix: issue 4](https://github.com/1360151219/react-class-completion/issues/4)
 
 ## Get Started
@@ -57,22 +61,8 @@ For instance，in this following structure，we can get the class completions wh
   - [x] listening for classname changing in `.tsx` file.(only in changed file)
 - [x] 🌟 **support go to defination from classname in `scss/css` to the relative `tsx` file**
 
-  - [] scss variable support
-
-  ```scss
-  // For Example
-  $prefix: foo;
-  .#{$prefix}-#{$prefix} {
-    &-2 {
-      &-4 {
-      }
-    }
-    .foo-foo-4 {
-    }
-    .foo {
-    }
-  }
-  ```
+  - [] scss variable support (CodeLens: click to replace what is showed for you)
+    ![](https://mmbiz.qpic.cn/mmbiz_png/8IKkzp8OBoZMKyibtPibOdhqibsLv3xibTqiaicuMHQw6CbU2G1WibS7n6ibOcD2WQV4xhNefibicuuPv9lItfwmME8IiagRQ/0?wx_fmt=png)
 
 ## Q&A
 
